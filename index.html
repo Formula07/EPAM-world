@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EPAM City</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<section id="menu">
+  <div class="menu-panel">
+    <h1 class="logo"><span class="bracket">&lt;</span>EPAM<span class="bracket">&gt;</span><small>CITY</small></h1>
+    <p class="tagline">Open world · Office edition</p>
+
+    <label class="field">
+      <span>Player name</span>
+      <input id="player-name" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Enter your name">
+    </label>
+
+    <div class="field">
+      <span>Choose your avatar</span>
+      <div class="avatar-select">
+        <button class="arrow" id="avatar-prev" aria-label="Previous avatar">‹</button>
+        <div id="avatar-preview"><span id="avatar-status"></span></div>
+        <button class="arrow" id="avatar-next" aria-label="Next avatar">›</button>
+      </div>
+      <div class="avatar-info">
+        <h2 id="avatar-name"></h2>
+        <p id="avatar-blurb"></p>
+        <div id="avatar-dots"></div>
+      </div>
+    </div>
+
+    <button id="join" disabled>JOIN</button>
+    <p class="hint">WASD move · Shift run · Space jump · Click punch · F car · E snatch laptop · Tab help &amp; cheats</p>
+  </div>
+</section>
+
+<div id="loading" hidden>LOADING…</div>
+
+<section id="hud" hidden>
+  <div id="stats">
+    <div id="weapon"><i class="weapon-icon"></i><span id="weapon-name">Fists</span></div>
+    <div id="money">$00000000</div>
+    <div id="money-pop" hidden></div>
+    <div id="wanted"></div>
+    <div class="bar" id="armor-bar" hidden><i></i></div>
+    <div class="bar" id="health-bar"><i></i></div>
+    <div id="player-card"><span id="hud-name"></span><small id="hud-avatar"></small></div>
+  </div>
+  <div id="radar"><canvas id="minimap" width="220" height="220"></canvas></div>
+  <div id="crosshair"></div>
+  <div id="vehicle-name" hidden></div>
+  <div id="prompt" hidden></div>
+  <div id="toasts"></div>
+  <div id="damage-flash"></div>
+  <div id="big-message" hidden></div>
+  <div id="help" hidden></div>
+  <div id="help-hint"><kbd>Tab</kbd> controls &amp; cheats</div>
+  <div id="lock-hint">Click to control the camera</div>
+</section>
+
+<div id="boot-error" hidden></div>
+<script>
+  // Shown when the game scripts can't start: opened from file://, or three.js blocked by the network.
+  function showBootError(html) {
+    const el = document.getElementById('boot-error');
+    el.innerHTML = html;
+    el.hidden = false;
+  }
+  if (location.protocol === 'file:') {
+    showBootError('<h2>Open the game through the local server</h2>' +
+      '<p>Browsers block game scripts when the page is opened as a file, so avatars and JOIN can\'t work.</p>' +
+      '<p>Double-click <code>play.cmd</code> in the <code>game</code> folder, or run <code>node serve.mjs</code> there, ' +
+      'then open <a href="http://localhost:5173">http://localhost:5173</a>.</p>');
+  }
+</script>
+<script type="module" src="src/main.js"
+  onerror="location.protocol !== 'file:' && showBootError('<h2>Game scripts failed to load</h2><p>three.js comes from cdn.jsdelivr.net. Check that your network or proxy allows it, then reload.</p>')"></script>
+</body>
+</html>
