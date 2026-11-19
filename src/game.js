@@ -9,6 +9,9 @@ import { Police } from './police.js';
 import { Cheats } from './cheats.js';
 import { Player } from './player.js';
 import { ThirdPersonCamera } from './camera.js';
+import { Network, inviteLink } from './net.js';
+import { RemotePlayers } from './remotes.js';
+import { Voice } from './voice.js';
 import { clamp, dist2d } from './utils.js';
 
 const SHELL_SPEED = 55;
@@ -19,6 +22,7 @@ const HOSPITAL_FEE = 100;
 const BAIL = 250;
 const WRECK_LIFE = 40;
 const PARKING_REFILL = 20;
+const NET_RATE = 1 / 12;          // multiplayer state packets per second
 
 const shellGeo = new THREE.SphereGeometry(0.16, 10, 8);
 const shellMat = new THREE.MeshBasicMaterial({ color: '#ffcf6b', toneMapped: false });
@@ -27,7 +31,7 @@ const _ray = new THREE.Ray();
 
 // Owns every system of a running session and the rules that connect them.
 export class Game {
-  constructor({ scene, camera, canvas, world, input, avatar, name, nameTag, sfx }) {
+  constructor({ scene, camera, canvas, world, input, avatar, name, nameTag, sfx, room = null }) {
     this.scene = scene;
     this.camera = camera;
     this.world = world;
@@ -56,12 +60,71 @@ export class Game {
     input.onKey = code => { if (!this.over) this.cheats.onKey(code); };
     this.hud.show(name, avatar.def.name);
     this.hud.toast('Welcome to EPAM City. Press Tab for controls and cheats.');
+
+    this.net = null;
+    this.remotes = null;
+    this.voice = null;
+    this.netTimer = 0;
+    if (room) this.startMultiplayer(room, name, avatar.def.id);
+  }
+
+  // ---------- multiplayer ----------
+
+  async startMultiplayer(code, name, avatarId) {
+    const hud = this.hud;
+    this.remotes = new RemotePlayers(this);
+    this.voice = new Voice(this.sfx);
+    hud.showRoom(code, inviteLink(code));
+    const stream = await this.voice.startMic();
+    if (!stream) hud.toast('Microphone blocked: you can hear others, but they cannot hear you.');
+    const net = this.net = new Network({ code, hello: { name, avatar: avatarId }, stream });
+    net.on('join', (id, hello) => {
+      this.remotes.add(id, hello);
+      hud.toast(`${hello.name} joined the city`);
+      this.sfx.pickup();
+      if (this.voice.muted) net.broadcast({ type: 'mute', muted: true });
+    });
+    net.on('state', (id, s) => this.remotes.setState(id, s));
+    net.on('mute', (id, muted) => this.remotes.setMuted(id, muted));
+    net.on('stream', (id, s) => this.voice.add(id, s));
+    net.on('leave', (id, hello) => {
+      this.remotes.remove(id);
+      this.voice.remove(id);
+      hud.toast(`${hello.name} left the city`);
+    });
+    net.on('status', text => hud.toast(text));
+    try {
+      await net.start();
+    } catch (e) {
+      console.warn('Multiplayer failed to start', e);
+      hud.toast('Could not load multiplayer (peerjs from cdn.jsdelivr.net). Playing solo.');
+      this.net = null;
+    }
+  }
+
+  sendState(dt) {
+    this.netTimer -= dt;
+    if (this.netTimer > 0) return;
+    this.netTimer = NET_RATE;
+    const p = this.player, v = p.vehicle;
+    const r2 = n => Math.round(n * 100) / 100;
+    const pos = p.position;
+    this.net.broadcast({
+      type: 'state', x: r2(pos.x), y: r2(pos.y), z: r2(pos.z), h: r2(p.heading),
+      a: p.avatar.state, d: p.dead, w: p.weaponIndex >= 0 ? p.weapons[p.weaponIndex] : null,
+      v: v ? { t: v.type.id, x: r2(v.pos.x), z: r2(v.pos.z), h: r2(v.heading), l: r2(v.lean), s: r2(v.speed) } : null,
+    });
   }
 
   update(dt) {
     this.time += dt;
     const { player, input } = this;
     if (input.consume('help')) this.hud.toggleHelp();
+    if (input.consume('mute') && this.voice) {
+      const muted = this.voice.toggleMute();
+      this.net?.broadcast({ type: 'mute', muted });
+      this.hud.toast(muted ? 'Microphone muted' : 'Microphone on');
+    }
     if (this.over) input.clearQueue();
 
     player.update(dt, input, this.rig);
@@ -70,6 +133,7 @@ export class Game {
     if (!this.over) this.police.update(dt);
     this.npcs.update(dt);
     this.separateCharacters();
+    this.remotes?.pushPlayer(player);
     this.vehicleVsCharacters(dt);
     this.pickups.update(dt);
     this.updateShells(dt);
@@ -90,6 +154,11 @@ export class Game {
     this.rig.update(dt, focus);
     this.world.followSun(focus);
     this.nameTag.visible = player.avatar.root.visible;
+    if (this.remotes) {
+      this.remotes.update(dt);
+      this.voice.update(focus, this.rig.lookHeading, this.remotes);
+      if (this.net) this.sendState(dt);
+    }
     this.hud.update(dt, this);
     this.sfx.update(this.time, this.sirenLevel);
 

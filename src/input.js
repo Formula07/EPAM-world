@@ -12,6 +12,7 @@ const ACTIONS = {
   KeyE: 'steal',
   KeyQ: 'cycle',
   Tab: 'help',
+  KeyV: 'mute',
 };
 
 export class Input {

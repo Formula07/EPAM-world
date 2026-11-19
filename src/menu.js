@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { AVATARS, createAvatar } from './avatars.js';
+import { inviteLink, normalizeRoomCode, randomRoomCode } from './net.js';
 
 const NAME_KEY = 'epam-city-name';
 const $ = id => document.getElementById(id);
@@ -92,8 +93,32 @@ export function createMenu({ onJoin }) {
     if (joinBtn.disabled) return;
     const name = nameInput.value.trim();
     localStorage.setItem(NAME_KEY, name);
-    onJoin({ name, def: AVATARS[index] });
+    onJoin({ name, def: AVATARS[index], room: normalizeRoomCode(roomInput.value) || null });
   };
+
+  // ---- optional multiplayer room: create one, or arrive through an invite link (?room=CODE)
+  const roomInput = $('room-input');
+  const showRoom = () => {
+    const code = normalizeRoomCode(roomInput.value);
+    if (roomInput.value !== code) roomInput.value = code;
+    const ready = code.length === 6;
+    $('room-invite').hidden = !ready;
+    $('room-link').textContent = ready ? inviteLink(code) : '';
+    $('room-note').textContent = !code ? 'Leave empty to play solo.'
+      : ready ? 'Send the invite link to friends. Your browser will ask to use the microphone.'
+        : 'Room codes have 6 characters.';
+  };
+  roomInput.value = normalizeRoomCode(new URLSearchParams(location.search).get('room'));
+  roomInput.addEventListener('input', showRoom);
+  roomInput.addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+  $('room-create').onclick = () => { roomInput.value = randomRoomCode(); showRoom(); };
+  $('room-link-copy').onclick = async () => {
+    const btn = $('room-link-copy');
+    try { await navigator.clipboard.writeText($('room-link').textContent); btn.textContent = 'Copied!'; }
+    catch { prompt('Copy this invite link:', $('room-link').textContent); }
+    setTimeout(() => { btn.textContent = 'Copy invite'; }, 1500);
+  };
+  showRoom();
 
   nameInput.value = localStorage.getItem(NAME_KEY) || '';
   nameInput.addEventListener('input', validate);
@@ -101,7 +126,7 @@ export function createMenu({ onJoin }) {
   $('avatar-prev').onclick = () => select(index - 1);
   $('avatar-next').onclick = () => select(index + 1);
   addEventListener('keydown', e => {
-    if (menu.hidden || e.target === nameInput) return;
+    if (menu.hidden || e.target instanceof HTMLInputElement) return;
     if (e.key === 'ArrowLeft') select(index - 1);
     if (e.key === 'ArrowRight') select(index + 1);
   });

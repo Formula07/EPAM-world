@@ -12,10 +12,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); 
 
 /* ---------- start screen ---------- */
 #menu {
-  position: fixed; inset: 0; display: flex; align-items: center;
+  position: fixed; inset: 0; display: flex; align-items: center; overflow-y: auto;
   background: linear-gradient(90deg, rgba(5,7,10,.92) 0%, rgba(5,7,10,.75) 38%, rgba(5,7,10,0) 70%);
 }
-.menu-panel { width: 440px; margin-left: 6vw; display: flex; flex-direction: column; gap: 18px; }
+.menu-panel { width: 440px; margin: auto 0 auto 6vw; padding: 20px 0; display: flex; flex-direction: column; gap: 16px; }
 .logo {
   margin: 0; font-family: var(--display); font-weight: 400; font-size: min(84px, 9vh); line-height: .9; letter-spacing: 1px;
   text-shadow: 4px 4px 0 #000, 0 0 30px rgba(57,194,215,.35); transform: skew(-6deg);
@@ -32,7 +32,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); 
 #player-name:focus { border-color: var(--cyan); }
 .avatar-select { display: flex; align-items: center; gap: 8px; }
 #avatar-preview {
-  position: relative; flex: 1; height: min(300px, 30vh); border-radius: 6px; overflow: hidden;
+  position: relative; flex: 1; height: min(260px, 26vh); border-radius: 6px; overflow: hidden;
   background: radial-gradient(ellipse at 50% 80%, rgba(57,194,215,.22), rgba(255,255,255,.03) 60%);
   border: 1px solid rgba(255,255,255,.1);
 }
@@ -147,3 +147,36 @@ kbd { display: inline-block; min-width: 22px; padding: 0 6px; margin-left: 3px; 
   font: 600 13px Inter, sans-serif; color: #fff; padding: 2px 8px; border-radius: 3px;
   background: rgba(0,0,0,.55); border-bottom: 2px solid var(--cyan); white-space: nowrap; pointer-events: none;
 }
+
+/* ---------- multiplayer ---------- */
+.field > span em { font-style: normal; text-transform: none; letter-spacing: 0; opacity: .8; }
+.mp-row { display: flex; gap: 8px; }
+#room-input {
+  flex: 1; min-width: 0; font: 600 18px ui-monospace, Consolas, monospace; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--text); background: rgba(255,255,255,.06); border: 2px solid rgba(255,255,255,.15); border-radius: 4px; padding: 8px 12px; outline: none;
+}
+#room-input:focus { border-color: var(--cyan); }
+#room-create, #room-link-copy, #room-copy {
+  font: 600 13px Inter, sans-serif; color: var(--text); background: rgba(57,194,215,.15); border: 2px solid var(--cyan);
+  border-radius: 4px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
+}
+#room-create:hover, #room-link-copy:hover, #room-copy:hover { background: var(--cyan); color: #000; }
+#room-invite { display: flex; gap: 8px; align-items: center; }
+#room-link { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--cyan); font-size: 12px; }
+.mp-note { margin: 0; color: var(--muted); font-size: 12px; }
+
+#room {
+  position: absolute; left: 24px; bottom: 262px; min-width: 200px; padding: 8px 12px;
+  background: rgba(0,0,0,.6); border-left: 4px solid #ffd54a; font-size: 13px; pointer-events: auto;
+}
+.room-head { font-weight: 600; letter-spacing: 1px; }
+.room-head b { color: #ffd54a; font-family: ui-monospace, Consolas, monospace; letter-spacing: 2px; }
+.room-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 2px; }
+#room-copy { padding: 3px 8px; font-size: 12px; }
+#mic-status .on { color: #6fd36f; font-weight: 600; }
+#mic-status .off { color: #e84a4a; font-weight: 600; }
+#room-players { list-style: none; margin: 4px 0 0; padding: 0; }
+#room-players li { padding: 1px 0; color: var(--muted); }
+#room-players li.speaking { color: #fff; }
+.name-tag.remote { border-bottom-color: #ffd54a; }
+.name-tag.speaking { box-shadow: 0 0 0 2px #6fd36f; }

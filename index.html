@@ -10,7 +10,8 @@
 <script type="importmap">
 { "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "peerjs": "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/+esm"
 } }
 </script>
 </head>
@@ -41,6 +42,19 @@
       </div>
     </div>
 
+    <div class="field" id="multiplayer">
+      <span>Play with friends <em>(optional · voice chat)</em></span>
+      <div class="mp-row">
+        <input id="room-input" maxlength="6" autocomplete="off" spellcheck="false" placeholder="Room code">
+        <button id="room-create" type="button">Create room</button>
+      </div>
+      <div id="room-invite" hidden>
+        <code id="room-link"></code>
+        <button id="room-link-copy" type="button">Copy invite</button>
+      </div>
+      <p class="mp-note" id="room-note">Leave empty to play solo.</p>
+    </div>
+
     <button id="join" disabled>JOIN</button>
     <p class="hint">WASD move · Shift run · Space jump · Click punch · F car · E snatch laptop · Tab help &amp; cheats</p>
   </div>
@@ -63,6 +77,11 @@
   <div id="vehicle-name" hidden></div>
   <div id="prompt" hidden></div>
   <div id="toasts"></div>
+  <div id="room" hidden>
+    <div class="room-head">ROOM <b id="room-code"></b> · <span id="room-count">1 player</span></div>
+    <div class="room-actions"><span id="mic-status"></span><button id="room-copy" type="button">Copy invite</button></div>
+    <ul id="room-players"></ul>
+  </div>
   <div id="damage-flash"></div>
   <div id="big-message" hidden></div>
   <div id="help" hidden></div>

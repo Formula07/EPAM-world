@@ -43,7 +43,8 @@ export class Hud {
     const controls = [
       ['W A S D', 'Move / drive'], ['Shift', 'Run'], ['Space', 'Jump / handbrake'], ['Mouse', 'Look · aim tank turret'],
       ['Click', 'Punch · swing laptop · fire cannon'], ['F', 'Enter / exit vehicle'], ['E', 'Snatch a laptop (near someone carrying one)'],
-      ['Q', 'Switch weapon'], ['Wheel', 'Camera zoom'], ['Tab', 'Toggle this help'], ['Esc', 'Free the cursor'],
+      ['Q', 'Switch weapon'], ['V', 'Mute / unmute your mic (multiplayer)'], ['Wheel', 'Camera zoom'],
+      ['Tab', 'Toggle this help'], ['Esc', 'Free the cursor (to click Copy invite)'],
     ];
     const rows = list => list.map(([k, d]) => `<tr><td>${k}</td><td>${d}</td></tr>`).join('');
     this.el.help.innerHTML = `
@@ -59,6 +60,32 @@ export class Hud {
   }
 
   toggleHelp() { this.el.help.hidden = !this.el.help.hidden; }
+
+  showRoom(code, link) {
+    $('room-code').textContent = code;
+    $('room').hidden = false;
+    const copy = $('room-copy');
+    copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied!'; }
+      catch { prompt('Copy this invite link:', link); }
+      setTimeout(() => { copy.textContent = 'Copy invite'; }, 1500);
+    };
+    this.roomTimer = 0;
+  }
+
+  updateRoom(dt, game) {
+    this.roomTimer -= dt;
+    if (this.roomTimer > 0) return;
+    this.roomTimer = 0.2;
+    const remotes = game.remotes.list;
+    const me = game.voice;
+    const mic = !me.stream ? 'NO MIC' : me.muted ? 'MUTED' : 'MIC ON';
+    $('mic-status').innerHTML = `<span class="${me.muted || !me.stream ? 'off' : 'on'}">${mic}</span> <kbd>V</kbd>`;
+    $('room-count').textContent = `${remotes.length + 1} player${remotes.length ? 's' : ''}`;
+    const esc = t => t.replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
+    $('room-players').innerHTML = remotes.map(r =>
+      `<li class="${r.speaking ? 'speaking' : ''}">${r.muted ? '🔇' : r.speaking ? '🔊' : '🎙️'} ${esc(r.name)}</li>`).join('');
+  }
 
   toast(text, kind = '') {
     const t = document.createElement('div');
@@ -126,6 +153,7 @@ export class Hud {
     this.vehicleTimer -= dt;
     if (this.vehicleTimer <= 0) this.el.vehicle.hidden = true;
 
+    if (game.remotes) this.updateRoom(dt, game);
     this.drawMinimap(dt, game);
   }
 
@@ -191,6 +219,13 @@ export class Hud {
     for (const n of game.npcs.officers) {
       const q = toScreen(n.x, n.z);
       if (inside(q)) dot(q, flash ? '#3a7bff' : '#ff3b3b', 3);
+    }
+    // other players stick to the rim so you can always find your friends
+    for (const rp of game.remotes?.list ?? []) {
+      let q = toScreen(rp.x, rp.z);
+      const dx = q.x - r, dy = q.y - r, d = Math.hypot(dx, dy);
+      if (d > r - 8) q = { x: r + (dx / d) * (r - 8), y: r + (dy / d) * (r - 8) };
+      dot(q, '#ffd54a', 4);
     }
 
     // landmarks stick to the rim when far away

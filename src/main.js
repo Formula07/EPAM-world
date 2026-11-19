@@ -44,7 +44,7 @@ function lockPointer() {
   try { canvas.requestPointerLock()?.catch?.(() => {}); } catch {}
 }
 
-async function join({ name, def }) {
+async function join({ name, def, room }) {
   if (joining) return;
   joining = true;
   sfx.unlock();                   // JOIN is a user gesture, so audio may start now
@@ -69,7 +69,8 @@ async function join({ name, def }) {
   avatar.root.add(nameTag);
 
   input.clearQueue();
-  game = new Game({ scene, camera, canvas, world, input, avatar, name, nameTag, sfx });
+  game = new Game({ scene, camera, canvas, world, input, avatar, name, nameTag, sfx, room });
+  if (room) history.replaceState(null, '', `?room=${room}`);   // a refresh rejoins the same room
   canvas.addEventListener('click', lockPointer);
   lockPointer();
 }
